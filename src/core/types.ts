@@ -62,6 +62,7 @@ export interface DialPart {
   kind: 'dial'; id: PartId; pos: Vec2
   style: string
   front?: boolean   // true: 歯車より前に描く(本物の時計ふう)/ 省略時: 背面(スケルトンふう)
+  mountId?: PartId | null   // 軸パーツに取り付けると中心がぴったり合い、追従する
 }
 
 export type Part =

@@ -40,7 +40,7 @@ export class World {
   remove(id: PartId): void {
     this.parts = this.parts.filter(p => p.id !== id)
     for (const p of this.parts) {
-      if ((p.kind === 'hand' || p.kind === 'cam' || p.kind === 'doll') && p.mountId === id) {
+      if ((p.kind === 'hand' || p.kind === 'cam' || p.kind === 'doll' || p.kind === 'dial') && p.mountId === id) {
         p.mountId = null
       }
     }
@@ -50,7 +50,7 @@ export class World {
   snapPart(p: Part): void {
     if (isAxle(p)) this.snapAxle(p)
     else if (p.kind === 'rack') this.snapRack(p)
-    else if (p.kind === 'hand' || p.kind === 'cam' || p.kind === 'doll') this.tryMount(p)
+    else if (p.kind === 'hand' || p.kind === 'cam' || p.kind === 'doll' || p.kind === 'dial') this.tryMount(p)
   }
 
   private snapAxle(part: AxlePart): void {
@@ -108,11 +108,13 @@ export class World {
 
   // 針・カム・人形を近くの相手に取り付ける
   tryMount(p: Part): void {
-    if (p.kind === 'hand' || p.kind === 'cam') {
+    if (p.kind === 'hand' || p.kind === 'cam' || p.kind === 'dial') {
+      // 文字盤は大きいので広めの範囲で軸センターに吸着させる
+      const range = p.kind === 'dial' ? MOUNT_R * 1.7 : MOUNT_R
       let best: { d: number; id: PartId } | null = null
       for (const a of this.axles()) {
         const d = dist(p.pos, a.pos)
-        if (d < MOUNT_R && (!best || d < best.d)) best = { d, id: a.id }
+        if (d < range && (!best || d < best.d)) best = { d, id: a.id }
       }
       p.mountId = best ? best.id : null
     } else if (p.kind === 'doll') {
@@ -134,7 +136,7 @@ export class World {
   // 取り付け先に合わせて位置を追従させる
   syncMounts(): void {
     for (const p of this.parts) {
-      if (p.kind === 'hand' || p.kind === 'cam') {
+      if (p.kind === 'hand' || p.kind === 'cam' || p.kind === 'dial') {
         const m = p.mountId ? this.byId(p.mountId) : undefined
         if (!m) { p.mountId = null; continue }
         p.pos = { ...m.pos }

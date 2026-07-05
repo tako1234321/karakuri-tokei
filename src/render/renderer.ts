@@ -308,6 +308,13 @@ function drawDial(app: App, p: Extract<Part, { kind: 'dial' }>): void {
       ctx.stroke()
     }
   }
+
+  // 中心の点(針やはぐるまのじくを合わせる目印)
+  ctx.fillStyle = '#4a3a28'
+  ctx.beginPath()
+  ctx.arc(0, 0, 6, 0, Math.PI * 2)
+  ctx.fill()
+
   ctx.restore()
 }
 
@@ -454,7 +461,7 @@ function drawSnapPreview(app: App): void {
         }
       }
     }
-  } else if (part.kind === 'hand' || part.kind === 'cam' || part.kind === 'doll') {
+  } else if (part.kind === 'hand' || part.kind === 'cam' || part.kind === 'doll' || part.kind === 'dial') {
     for (const a of app.world.axles()) {
       if (dist(part.pos, a.pos) < 80) {
         ctx.strokeStyle = 'rgba(70,150,220,0.9)'

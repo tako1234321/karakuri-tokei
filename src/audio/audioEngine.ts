@@ -125,7 +125,8 @@ export class AudioEngine {
       const t0 = this.ctx!.currentTime + 0.08
       let acc = 0
       for (const n of melody.notes) {
-        if (n.n) this.bell(noteFreq(n.n), t0 + acc * 1, 1.9, 0.38)
+        // 音の長さに合わせて余韻を変える(速い曲は歯切れよく、遅い曲は響かせる)
+        if (n.n) this.bell(noteFreq(n.n), t0 + acc, Math.min(2.4, 0.5 + n.d * beat * 1.6), 0.38)
         acc += n.d * beat
       }
       for (let i = 0; i < strikes; i++) {

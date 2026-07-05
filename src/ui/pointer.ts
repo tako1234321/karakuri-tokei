@@ -101,7 +101,7 @@ export function initPointer(app: App): void {
         moved = true
         if (!undoPushed) { app.world.pushUndo(); undoPushed = true }
         // 取り付け済みパーツはドラッグで外れる
-        if (part.kind === 'hand' || part.kind === 'cam' || part.kind === 'doll') part.mountId = null
+        if (part.kind === 'hand' || part.kind === 'cam' || part.kind === 'doll' || part.kind === 'dial') part.mountId = null
         app.previewPartId = part.id
       }
       if (moved) part.pos = next
