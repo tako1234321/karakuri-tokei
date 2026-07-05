@@ -150,6 +150,25 @@ document.addEventListener('touchstart', e => {
   if (t && t.clientX < 32) e.preventDefault()
 }, { passive: false })
 
+// iOS Safariの「ページ全体ズーム」対策:
+// ピンチがブラウザのズームとして効くと、パレットが画面外に出たまま
+// リロード後も戻らなくなる。盤面のズームはPointer Eventsで別処理なので、
+// ブラウザ側のズームジェスチャーは丸ごと止める。
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false })
+document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false })
+
+// キーボード表示や回転でスクロール位置がずれたら元に戻す
+window.visualViewport?.addEventListener('resize', () => {
+  window.scrollTo(0, 0)
+  if (!appEl.hidden) camera.resize(canvas)
+})
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    window.scrollTo(0, 0)
+    if (!appEl.hidden) camera.resize(canvas)
+  }, 300)
+})
+
 // ---------- メインループ ----------
 
 let last = performance.now()

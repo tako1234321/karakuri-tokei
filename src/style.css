@@ -10,6 +10,8 @@ html, body {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+  /* ダブルタップズームを無効化(タップ・スクロールは許可) */
+  touch-action: manipulation;
 }
 
 button { font-family: inherit; }
