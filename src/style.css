@@ -1,0 +1,244 @@
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  font-family: 'Hiragino Maru Gothic ProN', 'BIZ UDGothic', 'Yu Gothic UI', 'Segoe UI', sans-serif;
+  background: #f6ecdc;
+  color: #4a3a28;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+button { font-family: inherit; }
+
+/* ---------- タイトル画面 ---------- */
+
+#titleScreen {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 30%, #fdf3e0, #eeD9b8 70%, #d9bd93);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.titleInner { text-align: center; }
+.titleInner h1 { font-size: 44px; color: #8a5a2b; margin: 8px 0 14px; letter-spacing: 4px; }
+.titleInner p { font-size: 17px; line-height: 1.9; margin-bottom: 26px; }
+#startBtn {
+  font-size: 26px; padding: 16px 60px; border: none; border-radius: 40px;
+  background: linear-gradient(180deg, #f0b34c, #d98f28);
+  color: #fff; box-shadow: 0 6px 0 #a96b16; cursor: pointer;
+}
+#startBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 #a96b16; }
+
+/* ---------- アプリ全体 ---------- */
+
+#app {
+  height: 100dvh;
+  display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+}
+#app[hidden] { display: none; }
+
+/* ---------- トップバー ---------- */
+
+#topbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: #8a5a2b;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+#topbar::-webkit-scrollbar { display: none; }
+.tbLogo { color: #ffe9c7; font-weight: bold; font-size: 15px; white-space: nowrap; }
+.tbClock {
+  font-variant-numeric: tabular-nums;
+  background: #3a2812; color: #7cf29a;
+  font-size: 19px; padding: 5px 12px; border-radius: 8px;
+  letter-spacing: 2px; white-space: nowrap;
+}
+.btn {
+  border: none; border-radius: 12px;
+  background: #fff4e2; color: #6e4520;
+  font-size: 15px; padding: 9px 13px;
+  cursor: pointer; white-space: nowrap;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.18);
+}
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.btn.active { background: #f0b34c; color: #fff; }
+.tbSpeeds { display: flex; gap: 4px; }
+.tbSpeed { padding: 9px 10px; }
+
+/* ---------- メイン領域 ---------- */
+
+#main { flex: 1; display: flex; min-height: 0; }
+
+#palette {
+  width: 96px; flex-shrink: 0;
+  overflow-y: auto;
+  background: #efdfc2;
+  border-right: 3px solid #d9bd93;
+  padding: 6px 5px calc(10px + env(safe-area-inset-bottom));
+  scrollbar-width: none;
+}
+#palette::-webkit-scrollbar { display: none; }
+.palItem {
+  background: #fffaf0; border-radius: 14px;
+  text-align: center; padding: 8px 2px 6px;
+  margin-bottom: 7px; cursor: grab;
+  border: 2px solid #e2cda4;
+  /* たてスワイプ=パレットのスクロール、よこスワイプ=盤面へのドラッグ */
+  touch-action: pan-y;
+}
+.palItem:active { background: #ffe9c7; }
+.palIcon { font-size: 27px; line-height: 1.2; }
+.palLabel { font-size: 11px; margin-top: 2px; }
+
+#stage { flex: 1; position: relative; min-width: 0; }
+#canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  touch-action: none;
+  display: block;
+}
+
+/* ---------- チェックパネル ---------- */
+
+#checkPanel {
+  position: absolute; top: 10px; right: 10px;
+  width: 250px;
+  background: rgba(255,250,240,0.96);
+  border: 3px solid #d9a441; border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  font-size: 13px;
+}
+.cpTitle { font-weight: bold; font-size: 15px; margin-bottom: 6px; }
+.cpRow { display: flex; align-items: flex-start; gap: 7px; padding: 5px 0; border-top: 1px dashed #e2cda4; }
+.cpMark { font-size: 19px; width: 22px; text-align: center; flex-shrink: 0; }
+.cpOk .cpMark { color: #2f9e4f; }
+.cpNg .cpMark { color: #d63c3c; }
+.cpName { font-weight: bold; width: 62px; flex-shrink: 0; padding-top: 2px; }
+.cpDetail { flex: 1; line-height: 1.45; }
+.cpDetail small { color: #9a7f5a; }
+.cpDone { margin-top: 8px; text-align: center; font-weight: bold; color: #2f9e4f; font-size: 15px; }
+
+/* ---------- ガイドパネル ---------- */
+
+#guidePanel {
+  position: absolute; left: 10px; top: 10px;
+  max-width: 330px;
+  background: rgba(255,250,240,0.97);
+  border: 3px solid #5b8dd9; border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+}
+.gpHead { font-weight: bold; font-size: 15px; color: #3a5f9e; margin-bottom: 6px; }
+.gpText { font-size: 13.5px; line-height: 1.8; }
+.gpFoot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; gap: 8px; }
+.gpDots { display: flex; gap: 4px; }
+.gpDot { width: 9px; height: 9px; border-radius: 50%; background: #d9c5a0; }
+.gpDot.done { background: #6cc07a; }
+.gpDot.now { background: #f0b34c; }
+.gpWait { font-size: 12px; color: #9a7f5a; }
+.gpBtn { background: #5b8dd9; color: #fff; }
+
+/* ---------- バナー ---------- */
+
+#banner {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: rgba(138,90,43,0.93); color: #ffe9c7;
+  font-size: 19px; font-weight: bold;
+  padding: 10px 26px; border-radius: 30px;
+  pointer-events: none;
+  animation: bannerIn 0.5s ease;
+  white-space: nowrap;
+}
+@keyframes bannerIn { from { opacity: 0; transform: translate(-50%, -16px); } }
+
+/* ---------- インスペクタ ---------- */
+
+#inspector {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px;
+  overflow-x: auto;
+  background: #efdfc2; border-top: 3px solid #d9bd93;
+  padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
+  scrollbar-width: none;
+}
+#inspector::-webkit-scrollbar { display: none; }
+#inspector[hidden] { display: none; }
+.insTitle { font-weight: bold; font-size: 15px; white-space: nowrap; }
+.insGroup { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.insLabel { font-size: 12.5px; }
+.insValue { font-size: 19px; font-weight: bold; min-width: 42px; text-align: center; }
+.insStep { font-size: 19px; padding: 7px 14px; }
+.insAction { background: #5b8dd9; color: #fff; }
+.insDelete { background: #e88b8b; color: #fff; margin-left: auto; }
+.insClose { padding: 9px 11px; }
+.insHint { font-size: 12px; color: #a4713a; white-space: nowrap; }
+.insSlider input[type='range'] { width: 170px; }
+
+/* ---------- モーダル ---------- */
+
+#modalRoot[hidden] { display: none; }
+.modalOverlay {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(60,40,20,0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modalBox {
+  background: #fffaf0; border-radius: 20px;
+  width: min(480px, 100%);
+  max-height: min(640px, 90dvh);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.modalHead {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #8a5a2b; color: #ffe9c7;
+  padding: 12px 16px;
+}
+.modalTitle { font-weight: bold; font-size: 17px; }
+.modalClose { background: none; border: none; color: #ffe9c7; font-size: 20px; cursor: pointer; padding: 2px 6px; }
+.modalBody { overflow-y: auto; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); }
+.menuSection { margin-bottom: 18px; }
+.menuHead { font-weight: bold; margin-bottom: 8px; font-size: 14.5px; }
+.menuRow { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+.menuSlotName { flex: 1; font-size: 13px; min-width: 130px; }
+.menuTextarea {
+  width: 100%; height: 74px; margin-top: 8px;
+  border: 2px solid #d9bd93; border-radius: 10px;
+  font-size: 11px; padding: 7px; resize: none;
+  font-family: monospace;
+}
+.menuHelp { font-size: 13px; line-height: 2.0; }
+
+/* ---------- トースト ---------- */
+
+.toast {
+  position: fixed; bottom: calc(110px + env(safe-area-inset-bottom)); left: 50%;
+  transform: translate(-50%, 18px);
+  background: rgba(60,40,20,0.9); color: #fff;
+  padding: 11px 22px; border-radius: 26px;
+  font-size: 15px; z-index: 60;
+  opacity: 0; transition: all 0.35s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- せまい画面(iPhoneたて) ---------- */
+
+@media (max-width: 640px) {
+  .tbLogo { display: none; }
+  #palette { width: 78px; }
+  .palIcon { font-size: 22px; }
+  .palLabel { font-size: 10px; }
+  #checkPanel { width: 210px; font-size: 12px; }
+  #guidePanel { max-width: 260px; }
+}
