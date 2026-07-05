@@ -7,14 +7,25 @@ import { partHitRadius } from '../render/renderer'
 //  1本指 … パーツのドラッグ or 盤面のパン、タップで選択
 //  2本指 … ピンチズーム+パン
 
-const HIT_ORDER: Record<Part['kind'], number> = {
-  doll: 0, hand: 1, cam: 2, motor: 3, karakuriMotor: 3, gear: 3,
-  escapement: 3, rack: 4, dial: 5,
+// 描画の重なり順(手前が小さい値)。renderer.ts の描画順と一致させること。
+// 下から: 文字盤(うしろ) → ラック → 歯車類 → カム → 文字盤(まえ) → 針 → 人形
+function hitOrder(p: Part): number {
+  switch (p.kind) {
+    case 'doll': return 0
+    case 'hand': return 1
+    case 'dial': return p.front ? 2 : 6
+    case 'cam': return 3
+    case 'rack': return 5
+    default: return 4   // motor / gear / escapement / karakuriMotor
+  }
 }
 
 function hitTest(app: App, w: Vec2): Part | null {
-  const sorted = [...app.world.parts].sort((a, b) => HIT_ORDER[a.kind] - HIT_ORDER[b.kind])
-  for (const p of sorted) {
+  // 最前面のものから順に判定(同じ層なら後から置いたものが手前)
+  const sorted = app.world.parts
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => hitOrder(a.p) - hitOrder(b.p) || b.i - a.i)
+  for (const { p } of sorted) {
     const pad = 10 / app.camera.scale
     if (dist(p.pos, w) < partHitRadius(p) + pad) return p
   }

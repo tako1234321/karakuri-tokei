@@ -285,13 +285,18 @@ function drawDial(app: App, p: Extract<Part, { kind: 'dial' }>): void {
       ctx.stroke()
     }
   } else {
-    ctx.font = `bold ${p.style === 'flower' ? 26 : 30}px 'Segoe UI', sans-serif`
+    // 時計の伝統で4時は「IIII」と書く
+    const ROMAN = ['', 'I', 'II', 'III', 'IIII', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
+    const roman = p.style === 'roman'
+    ctx.font = roman
+      ? `bold 24px Georgia, 'Times New Roman', serif`
+      : `bold ${p.style === 'flower' ? 26 : 30}px 'Segoe UI', sans-serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     for (let i = 1; i <= 12; i++) {
       const a = i * Math.PI / 6 - Math.PI / 2
       const r1 = R - 30
-      ctx.fillText(String(i), r1 * Math.cos(a), r1 * Math.sin(a))
+      ctx.fillText(roman ? ROMAN[i] : String(i), r1 * Math.cos(a), r1 * Math.sin(a))
     }
     ctx.lineWidth = 2
     for (let i = 0; i < 60; i++) {

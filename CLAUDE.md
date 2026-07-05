@@ -56,6 +56,7 @@ main へ push すると GitHub Actions(.github/workflows/deploy.yml)が自動ビ
 ### iOS Safari 固有の対応(壊さないこと)
 
 - 音は必ずユーザー操作後: タイトル画面「はじめる」タップで `AudioEngine.unlock()`
-- キャンバスとパレットの `touch-action` 設定(パレットは pan-y = 縦スクロール/横ドラッグの両立)
+- キャンバスとパレットの `touch-action` 設定(パレットは上部の横スクロールバー。pan-x = 横スクロール/下へのドラッグ配置の両立。左端に置くと Safari の戻るスワイプ等と衝突するため上部固定にした経緯がある)
+- タップのヒット判定順(ui/pointer.ts の hitOrder)は renderer.ts の描画順と一致させる(最前面優先)
 - 画面左端32pxの `touchstart` を preventDefault(戻るエッジスワイプ対策、main.ts)
 - ミューテーション系のUI操作は実行前に `world.pushUndo()` を呼ぶ(↩ボタンの整合性)
