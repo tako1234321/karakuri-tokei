@@ -165,12 +165,13 @@ button { font-family: inherit; }
 
 /* ---------- インスペクタ ---------- */
 
+/* インスペクタはパレットの下(画面下端はSafariのバーに隠れやすいため上部に置く) */
 #inspector {
   flex-shrink: 0;
   display: flex; align-items: center; gap: 10px;
   overflow-x: auto;
-  background: #efdfc2; border-top: 3px solid #d9bd93;
-  padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
+  background: #f6e8cd; border-bottom: 3px solid #d9bd93;
+  padding: 8px 12px;
   scrollbar-width: none;
 }
 #inspector::-webkit-scrollbar { display: none; }
@@ -226,8 +227,8 @@ button { font-family: inherit; }
 /* ---------- トースト ---------- */
 
 .toast {
-  position: fixed; bottom: calc(110px + env(safe-area-inset-bottom)); left: 50%;
-  transform: translate(-50%, 18px);
+  position: fixed; top: 170px; left: 50%;
+  transform: translate(-50%, -18px);
   background: rgba(60,40,20,0.9); color: #fff;
   padding: 11px 22px; border-radius: 26px;
   font-size: 15px; z-index: 60;
