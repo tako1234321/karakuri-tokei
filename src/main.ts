@@ -29,6 +29,12 @@ const audio = new AudioEngine()
 // 針を同軸スタックに乗せるとき「めあての速さの軸」を優先できるようにする
 world.rpmFracOf = id => sim.axles.get(id)?.rpmFrac ?? null
 
+// 音の雰囲気(ゲームふう/オルゴールふう)の設定を復元
+try {
+  const t = localStorage.getItem('karakuri:tone')
+  if (t === 'orgel' || t === 'game') audio.tone = t
+} catch { /* */ }
+
 const app: App = {
   world, sim, camera, canvas, overlayCtx, audio,
   selectedId: null,

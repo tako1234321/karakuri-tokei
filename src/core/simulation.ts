@@ -85,6 +85,21 @@ export class Simulation {
     }
     for (const [id, st] of this.axles) this.prevAngles.set(id, st.angle)
 
+    // ラックのばね戻り: 動力が止まっている(または外れている)ラックは
+    // ゆっくり元の位置へ戻る(実物のばね仕掛けと同じ。ことりが引っ込む動き)
+    for (const p of this.world.parts) {
+      if (p.kind !== 'rack' || p.disp === 0) continue
+      const driven = this.graph.racks.some(rm => {
+        if (rm.rackId !== p.id) return false
+        const st = this.axles.get(rm.gearId)
+        return !!st && !st.jammed && Math.abs(st.omega) > 1e-6
+      })
+      if (!driven) {
+        p.disp *= Math.max(0, 1 - dtReal * 2.5)
+        if (Math.abs(p.disp) < 0.3) p.disp = 0
+      }
+    }
+
     this.world.syncMounts()
 
     // ことりが飛び出した瞬間 → 鳴き声

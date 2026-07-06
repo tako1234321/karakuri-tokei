@@ -54,6 +54,41 @@ export function sampleClockParts(): Part[] {
   ]
 }
 
+// からくりショーのお手本:
+// からくりモーター(♪)は「毎正時のショーのあいだだけ」回る動力。
+// 歯車→ダンサー/手をふる子、ラック&ピニオン→とびだすことり、
+// カム→おじぎ人形、と4種類のからくりを全部つないだ見本。
+export function sampleShowParts(): Part[] {
+  const mk = <K extends Part['kind']>(kind: K, pos: Vec2, extra: object): Part =>
+    ({ kind, id: uid(), pos: { ...pos }, ...extra }) as Part
+
+  // からくりモーターの左=ダンサーの歯車、右=ラックのピニオン(直結で+方向に回り、ことりが飛び出す)
+  const kara = mk('karakuriMotor', { x: -180, y: -20 }, { teeth: 12, rpm: 5, layer: 0 })
+  const g1 = mk('gear', { x: -180 - pitchRadius(12) - pitchRadius(36), y: -20 }, { wheels: [36], layer: 0 })   // x=-348
+  const g2 = mk('gear', { x: -180 + pitchRadius(12) + pitchRadius(12), y: -20 }, { wheels: [12], layer: 0 })   // x=-96
+  const g3 = mk('gear', { x: -348, y: -20 - pitchRadius(36) - pitchRadius(24) }, { wheels: [24], layer: 0 })   // y=-230
+  // ながさ160: となりのからくりモーターのピニオンには届かない長さにする
+  const rack = mk('rack', { x: -96, y: -20 + pitchRadius(12) + 13 }, { length: 160, disp: 0, layer: 0 })       // y=35
+  const cam = mk('cam', { x: -180, y: -20 }, { profile: 'snail', mountId: kara.id })
+
+  return [
+    kara, g1, g2, g3, rack, cam,
+    mk('doll', { x: -348, y: -20 }, { doll: 'dancer', mountId: g1.id }),
+    mk('doll', { x: -348, y: -230 }, { doll: 'waver', mountId: g3.id }),
+    mk('doll', { x: -96, y: 35 }, { doll: 'cuckoo', mountId: rack.id }),
+    mk('doll', { x: -180, y: -98 }, { doll: 'bower', mountId: cam.id }),
+  ]
+}
+
+export function loadShowSample(app: App): void {
+  app.world.pushUndo()
+  app.world.parts = sampleShowParts()
+  app.select(null)
+  app.sim.update(0)
+  app.camera.resetFront()
+  app.toast('「♪ショー」をおしてみて!まいしょうじにも かってにうごくよ')
+}
+
 // お手本を読み込み、針を現在時刻に合わせる
 export function loadSample(app: App): void {
   app.world.pushUndo()

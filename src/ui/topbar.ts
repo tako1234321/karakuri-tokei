@@ -1,6 +1,6 @@
 import type { App } from '../app'
 import { MELODIES } from '../audio/melodies'
-import { loadSample } from '../data/samples'
+import { loadSample, loadShowSample } from '../data/samples'
 import { exportJson, importJson, loadSlot, saveSlot, slotList, wasMigrated } from '../storage/saves'
 import { button, closeModal, showModal } from './modal'
 
@@ -75,13 +75,24 @@ function openMenu(app: App): void {
     const sec0 = document.createElement('div')
     sec0.className = 'menuSection'
     sec0.innerHTML = '<div class="menuHead">🕰 おてほん</div>'
-    sec0.appendChild(button('うごく とけいを よみこむ', () => {
+    const row0 = document.createElement('div')
+    row0.className = 'menuRow'
+    row0.appendChild(button('うごく とけい', () => {
       loadSample(app)
       closeModal()
     }))
+    row0.appendChild(button('からくりショー', () => {
+      loadShowSample(app)
+      closeModal()
+    }))
+    sec0.appendChild(row0)
     const hint0 = document.createElement('div')
     hint0.className = 'menuHelp'
-    hint0.innerHTML = 'ほんものの とけいと おなじ しくみ(どうじく)で うごく おてほんだよ。<br>いまの ばんめんは ↩ で もどせるよ。'
+    hint0.innerHTML =
+      '「うごく とけい」= ほんものと おなじしくみ(どうじく)の とけい。<br>' +
+      '「からくりショー」= ダンサー・ことり(ラック)・おじぎ(カム)ぜんぶいり。<br>' +
+      'からくりモーター(♪)は <b>まいしょうじの ショーのあいだだけ</b> うごくよ。<br>' +
+      'いまの ばんめんは ↩ で もどせるよ。'
     sec0.appendChild(hint0)
     body.appendChild(sec0)
 
@@ -141,11 +152,20 @@ function openMenu(app: App): void {
     const sec3 = document.createElement('div')
     sec3.className = 'menuSection'
     sec3.innerHTML = '<div class="menuHead">🔊 おと</div>'
+    const row3 = document.createElement('div')
+    row3.className = 'menuRow'
     const sndBtn = button(app.audio.enabled ? 'おと ON' : 'おと OFF', () => {
       app.audio.setEnabled(!app.audio.enabled)
       sndBtn.textContent = app.audio.enabled ? 'おと ON' : 'おと OFF'
     })
-    sec3.appendChild(sndBtn)
+    const toneLabel = () => app.audio.tone === 'game' ? 'おんしょく: ゲームふう🎮' : 'おんしょく: オルゴールふう🎶'
+    const toneBtn = button(toneLabel(), () => {
+      app.audio.tone = app.audio.tone === 'game' ? 'orgel' : 'game'
+      try { localStorage.setItem('karakuri:tone', app.audio.tone) } catch { /* */ }
+      toneBtn.textContent = toneLabel()
+    })
+    row3.append(sndBtn, toneBtn)
+    sec3.appendChild(row3)
     body.appendChild(sec3)
 
     // かきだし / よみこみ(JSON)

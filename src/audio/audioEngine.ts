@@ -19,8 +19,11 @@ export function noteFreq(name: string): number {
 export class AudioEngine {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
+  private chipBus: GainNode | null = null   // ゲーム風音色用(エコーつき)
   private noiseBuf: AudioBuffer | null = null
   enabled = true
+  // 音の雰囲気: game=ピコピコしたゲーム風(テンポも速め) / orgel=オルゴール・合奏風
+  tone: 'game' | 'orgel' = 'game'
 
   unlock(): void {
     if (!this.ctx) {
@@ -28,6 +31,18 @@ export class AudioEngine {
       this.master = this.ctx.createGain()
       this.master.gain.value = 0.5
       this.master.connect(this.ctx.destination)
+      // ゲーム風のかるいエコー
+      this.chipBus = this.ctx.createGain()
+      const delay = this.ctx.createDelay(0.5)
+      delay.delayTime.value = 0.16
+      const fb = this.ctx.createGain()
+      fb.gain.value = 0.2
+      const wet = this.ctx.createGain()
+      wet.gain.value = 0.3
+      this.chipBus.connect(this.master)
+      this.chipBus.connect(delay)
+      delay.connect(fb).connect(delay)
+      delay.connect(wet).connect(this.master)
     }
     if (this.ctx.state !== 'running') void this.ctx.resume()
   }
@@ -128,7 +143,38 @@ export class AudioEngine {
     }
   }
 
+  // ゲーム風のピコピコ音(矩形波+歯切れのよいエンベロープ)
+  chip(freq: number, when: number, dur = 0.3, vel = 0.3): void {
+    if (!this.ready || !this.chipBus) return
+    const ctx = this.ctx!
+    const gate = Math.max(0.06, Math.min(dur * 0.88, dur - 0.02))
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(vel, when)
+    g.gain.setValueAtTime(vel * 0.75, when + gate * 0.5)
+    g.gain.linearRampToValueAtTime(0.0001, when + gate)
+    const lp = ctx.createBiquadFilter()
+    lp.type = 'lowpass'
+    lp.frequency.value = 7000
+    g.connect(lp).connect(this.chipBus)
+    const osc = ctx.createOscillator()
+    osc.type = 'square'
+    osc.frequency.value = freq
+    osc.connect(g)
+    osc.start(when)
+    osc.stop(when + gate + 0.05)
+    // オクターブ上をうっすら重ねてキラッとさせる
+    const o2 = ctx.createOscillator()
+    o2.type = 'square'
+    o2.frequency.value = freq * 2
+    const g2 = ctx.createGain()
+    g2.gain.value = 0.12
+    o2.connect(g2).connect(g)
+    o2.start(when)
+    o2.stop(when + gate + 0.05)
+  }
+
   private playNote(voice: Voice, freq: number, when: number, dur: number, vel: number): void {
+    if (this.tone === 'game') { this.chip(freq, when, dur, vel * 0.85); return }
     if (voice === 'flute') this.flute(freq, when, dur, vel)
     else if (voice === 'strings') this.strings(freq, when, dur, vel)
     else this.bell(freq, when, Math.min(2.4, 0.5 + dur * 1.6), vel)
@@ -183,10 +229,12 @@ export class AudioEngine {
 
   // メロディ+時打ちを予約再生し、全体の長さ(秒)を返す
   playChime(melody: Melody, strikes: number): number {
-    const beat = 60 / melody.bpm
+    // ゲーム風モードはテンポも速めて楽しく
+    const tempoScale = this.tone === 'game' ? 1.3 : 1
+    const beat = 60 / (melody.bpm * tempoScale)
     let total = 0
     for (const n of melody.notes) total += n.d * beat
-    const strikeGap = 1.4
+    const strikeGap = this.tone === 'game' ? 0.9 : 1.4
     const strikesStart = total + 0.6
     const fullDur = strikesStart + strikes * strikeGap + 1.5
 
@@ -198,11 +246,14 @@ export class AudioEngine {
         if (n.n) this.playNote(voice, noteFreq(n.n), t0 + acc, n.d * beat, voice === 'bell' ? 0.38 : 0.32)
         acc += n.d * beat
       }
-      // 伴奏(小さめのベル)
+      // 伴奏
       if (melody.accomp) {
         let acc2 = 0
         for (const n of melody.accomp) {
-          if (n.n) this.bell(noteFreq(n.n), t0 + acc2, Math.min(2.6, 0.7 + n.d * beat * 1.4), 0.15)
+          if (n.n) {
+            if (this.tone === 'game') this.chip(noteFreq(n.n), t0 + acc2, n.d * beat, 0.14)
+            else this.bell(noteFreq(n.n), t0 + acc2, Math.min(2.6, 0.7 + n.d * beat * 1.4), 0.15)
+          }
           acc2 += n.d * beat
         }
       }
