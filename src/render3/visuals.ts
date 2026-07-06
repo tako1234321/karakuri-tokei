@@ -11,8 +11,8 @@ import {
   type Part, type RackPart,
 } from '../core/types'
 import { DIAL_TEX_RADIUS, renderDialFace } from '../render/dialFace'
-import { drawDoll } from '../render/dollRenderer'
 import { partHitRadius } from '../render/partMetrics'
+import { buildDoll3, type Doll3 } from './dolls3'
 import * as G from './geometry'
 import * as M from './materials'
 import { CAM_Z, DIAL_BACK_Z, DIAL_FRONT_Z, DOLL_Z, GEAR_THICK, HAND_Z, zOfLayer } from './space'
@@ -33,7 +33,7 @@ export function revKey(p: Part): string {
     case 'escapement': return `esc:${p.escapeTeeth}:${p.layer}`
     case 'hand': return `hand:${p.hand}:${p.design}`
     case 'cam': return `cam:${p.profile}`
-    case 'rack': return `rack:${p.length}:${p.layer}`
+    case 'rack': return `rack:${p.length}:${p.layer}:${p.endStop ?? 'none'}`
     case 'dial': return `dial:${p.style}:${p.front ? 1 : 0}`
     case 'doll': return `doll:${p.doll}`
   }
@@ -194,7 +194,7 @@ class MotorVisual implements PartVisual {
     cap.scale.set(5, 5, 10)
     cap.position.z = z + 5
 
-    const icon = textSprite(isK ? '♪' : '⚡', 40, '#ffffff')
+    const icon = textSprite(isK ? '🎠' : '⚡', 40, '#ffffff')
     icon.position.set(0, -(r + 20) * 0.62, z + 4)
     icon.scale.set(30, 15, 1)
 
@@ -423,6 +423,16 @@ class RackVisual implements PartVisual {
 
     this.hit = hitDisk(part, z + GEAR_THICK)
     this.group.add(rail, this.bar, this.hit)
+
+    // 端っこのマイクロスイッチ(赤い小箱)
+    if ((part.endStop ?? 'none') !== 'none') {
+      for (const sx of [-1, 1]) {
+        const sw = new THREE.Mesh(G.box, M.anchorRed)
+        sw.scale.set(8, 14, 10)
+        sw.position.set(sx * (guideLen / 2 - 5), -6, z)
+        this.group.add(sw)
+      }
+    }
   }
 
   update(app: App, part: Part): void {
@@ -434,49 +444,18 @@ class RackVisual implements PartVisual {
   dispose(): void { /* 共有 */ }
 }
 
-// ---------- からくり人形(書割り風の平板) ----------
-
-const DOLL_TEX_W = 256
-const DOLL_TEX_H = 384
-const DOLL_SCALE = 1.9   // キャンバスpx / ワールド単位
+// ---------- からくり人形(本物の3D) ----------
 
 class DollVisual implements PartVisual {
   group = new THREE.Group()
   hit: THREE.Mesh
-  private canvas: HTMLCanvasElement
-  private ctx2: CanvasRenderingContext2D
-  private tex: THREE.CanvasTexture
-  private mat: THREE.MeshBasicMaterial
-  private geo: THREE.PlaneGeometry
-  private lastInput = Infinity
-  private lastDrawT = -1
+  private doll: Doll3
 
   constructor(part: DollPart) {
-    this.canvas = document.createElement('canvas')
-    this.canvas.width = DOLL_TEX_W
-    this.canvas.height = DOLL_TEX_H
-    this.ctx2 = this.canvas.getContext('2d')!
-    this.tex = new THREE.CanvasTexture(this.canvas)
-    this.tex.colorSpace = THREE.SRGBColorSpace
-    this.mat = new THREE.MeshBasicMaterial({
-      map: this.tex, transparent: true, side: THREE.DoubleSide, alphaTest: 0.05,
-    })
-    this.geo = new THREE.PlaneGeometry(DOLL_TEX_W / DOLL_SCALE, DOLL_TEX_H / DOLL_SCALE)
-    // 取り付け点(足もと)が原点に来るようにずらす
-    this.geo.translate(0, (340 - DOLL_TEX_H / 2) / DOLL_SCALE, 0)
-    const plane = new THREE.Mesh(this.geo, this.mat)
+    this.doll = buildDoll3(part.doll)
     this.hit = hitDisk(part, 2)
     this.hit.position.y = 30
-    this.group.add(plane, this.hit)
-  }
-
-  private redraw(part: DollPart, input: number, time: number): void {
-    const ctx = this.ctx2
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-    ctx.clearRect(0, 0, DOLL_TEX_W, DOLL_TEX_H)
-    ctx.setTransform(DOLL_SCALE, 0, 0, DOLL_SCALE, DOLL_TEX_W / 2, 340)
-    drawDoll(ctx, part.doll, input, time)
-    this.tex.needsUpdate = true
+    this.group.add(this.doll.group, this.hit)
   }
 
   update(app: App, part: Part): void {
@@ -489,20 +468,12 @@ class DollVisual implements PartVisual {
       if (m && m.kind === 'cam') y += input * CAM_AMP
     }
     this.group.position.set(part.pos.x, y, DOLL_Z)
-
-    // 変化があったときだけ描き直す(最大30fps)
-    const animating = part.doll === 'cuckoo' && input > 0.55
-    const changed = Math.abs(input - this.lastInput) > 0.002 || animating
-    if (changed && app.time - this.lastDrawT > 1 / 30) {
-      this.redraw(part, input, app.time)
-      this.lastInput = input
-      this.lastDrawT = app.time
-    }
+    this.doll.update(input, app.time)
   }
 
   dispose(): void {
-    this.tex.dispose()
-    this.mat.dispose()
-    this.geo.dispose()
+    this.doll.group.traverse(o => {
+      if (o instanceof THREE.Mesh) o.geometry.dispose()
+    })
   }
 }

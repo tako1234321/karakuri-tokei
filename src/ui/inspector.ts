@@ -12,7 +12,7 @@ const ESC_TEETH = [20, 24, 30, 36, 40]
 
 const KIND_LABEL: Record<Part['kind'], string> = {
   motor: '⚡ モーター', gear: '⚙️ はぐるま', escapement: '🕰️ ふりこ(だっしんき)',
-  karakuriMotor: '♪ からくりモーター', hand: 'はり', rack: '➖ ラック',
+  karakuriMotor: '🎠 からくりモーター(まいしょうじにうごく)', hand: 'はり', rack: '➖ ラック',
   cam: '🥚 カム', doll: '🎎 にんぎょう', dial: '🕛 もじばん',
 }
 
@@ -150,6 +150,15 @@ export function initInspector(app: App): { refresh: () => void } {
       ], () => (p.front ? 'front' : 'back'), v => { p.front = v === 'front' }))
     } else if (p.kind === 'rack') {
       el.appendChild(numberEditor('ながさ', () => p.length, v => { p.length = v }, [160, 200, 240, 280, 320, 360]))
+      el.appendChild(cycleEditor('はしのスイッチ', [
+        { key: 'none', label: 'なし' },
+        { key: 'reverse', label: 'はんてん(モーターがぎゃくまわり)' },
+        { key: 'stop', label: 'ストップ(モーターがとまる)' },
+      ], () => p.endStop ?? 'none', v => { p.endStop = v as 'none' | 'stop' | 'reverse' }))
+      const hint = document.createElement('span')
+      hint.className = 'insHint'
+      hint.textContent = 'からくりモーター(🎠)に きくよ'
+      el.appendChild(hint)
     }
 
     // 奥行きの層(軸パーツとラック)

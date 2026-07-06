@@ -54,6 +54,9 @@ export interface RackPart {
   length: number
   disp: number   // スライド変位(-travel/2 .. +travel/2)
   layer: number
+  // 端っこのマイクロスイッチ: 端に当たったとき、駆動しているからくりモーターを
+  // 反転(reverse)または停止(stop)させる。省略時は なし
+  endStop?: 'none' | 'stop' | 'reverse'
 }
 
 export interface CamPart {
@@ -95,6 +98,7 @@ export interface AxleState {
   jammed: boolean        // 矛盾して動けない
   rpm: number            // 1シミュ分あたりの回転数(数値)
   rpmFrac: Fraction | null  // 動力が有理数のときの厳密な回転数
+  driver: PartId | null  // この軸を動かしている動力パーツ
 }
 
 export interface SaveData {

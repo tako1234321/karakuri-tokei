@@ -99,7 +99,7 @@ button { font-family: inherit; }
 }
 .palItem:active { background: #ffe9c7; }
 .palIcon { font-size: 25px; line-height: 1.2; }
-.palLabel { font-size: 10.5px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.palLabel { font-size: 10.5px; margin-top: 1px; line-height: 1.2; }
 
 #stage { flex: 1; position: relative; min-width: 0; }
 #canvas {

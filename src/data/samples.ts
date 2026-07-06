@@ -68,7 +68,7 @@ export function sampleShowParts(): Part[] {
   const g2 = mk('gear', { x: -180 + pitchRadius(12) + pitchRadius(12), y: -20 }, { wheels: [12], layer: 0 })   // x=-96
   const g3 = mk('gear', { x: -348, y: -20 - pitchRadius(36) - pitchRadius(24) }, { wheels: [24], layer: 0 })   // y=-230
   // ながさ160: となりのからくりモーターのピニオンには届かない長さにする
-  const rack = mk('rack', { x: -96, y: -20 + pitchRadius(12) + 13 }, { length: 160, disp: 0, layer: 0 })       // y=35
+  const rack = mk('rack', { x: -96, y: -20 + pitchRadius(12) + 13 }, { length: 160, disp: 0, layer: 0, endStop: 'reverse' })   // y=35
   const cam = mk('cam', { x: -180, y: -20 }, { profile: 'snail', mountId: kara.id })
 
   return [

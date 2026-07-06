@@ -90,7 +90,7 @@ export function assignAxles(
   const res = new Map<PartId, AxleState>()
   for (const [id] of parts) {
     const pv = prev.get(id)
-    res.set(id, { angle: pv?.angle ?? 0, omega: 0, driven: false, jammed: false, rpm: 0, rpmFrac: null })
+    res.set(id, { angle: pv?.angle ?? 0, omega: 0, driven: false, jammed: false, rpm: 0, rpmFrac: null, driver: null })
   }
 
   interface Adj { other: PartId; myWheel: number; otherWheel: number }
@@ -137,6 +137,7 @@ export function assignAxles(
     dst.driven = true
     dst.rpm = dstate.rpm
     dst.rpmFrac = dstate.rpmFrac
+    dst.driver = did
 
     let jam = false
     const q: PartId[] = [did]
@@ -167,6 +168,7 @@ export function assignAxles(
         bSt.driven = true
         bSt.rpm = -ratio * aSt.rpm
         bSt.rpmFrac = aSt.rpmFrac ? fmul(aSt.rpmFrac, frac(-za, zb)) : null
+        bSt.driver = did
         q.push(e.other)
       }
     }

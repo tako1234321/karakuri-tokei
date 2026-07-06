@@ -17,6 +17,8 @@ export class Simulation {
   showDuration = 0
   private karakuriAngles = new Map<PartId, number>()
   private karakuriTest = new Map<PartId, number>()
+  private karakuriDir = new Map<PartId, 1 | -1>()      // マイクロスイッチによる反転状態
+  private karakuriStopped = new Set<PartId>()          // マイクロスイッチによる停止状態
   private prevAngles = new Map<PartId, number>()
   private cuckooOut = new Map<PartId, boolean>()
   private lastTicks = new Map<PartId, number>()
@@ -55,12 +57,14 @@ export class Simulation {
         this.lastTicks.set(p.id, st.ticks)
       } else if (p.kind === 'karakuriMotor') {
         const test = this.karakuriTest.get(p.id) ?? 0
-        const active = this.showTimer > 0 || test > 0
+        // ラックのマイクロスイッチで止められている間は動かない
+        const active = (this.showTimer > 0 || test > 0) && !this.karakuriStopped.has(p.id)
         if (test > 0) this.karakuriTest.set(p.id, Math.max(0, test - dtReal))
+        const dir = this.karakuriDir.get(p.id) ?? 1
         let a = this.karakuriAngles.get(p.id) ?? 0
-        if (active) a += 2 * Math.PI * p.rpm / 60 * dtReal   // ショーは実時間で動く
+        if (active) a += 2 * Math.PI * p.rpm / 60 * dtReal * dir   // ショーは実時間で動く
         this.karakuriAngles.set(p.id, a)
-        drivers.set(p.id, { angle: a, omega: active ? 2 * Math.PI * p.rpm / 60 : 0, rpm: 0, rpmFrac: null })
+        drivers.set(p.id, { angle: a, omega: active ? 2 * Math.PI * p.rpm / 60 * dir : 0, rpm: 0, rpmFrac: null })
       }
     }
 
@@ -79,7 +83,21 @@ export class Simulation {
         const dTheta = st.angle - prevA
         if (Math.abs(dTheta) < 1) {   // 配置変更時の角度ジャンプは無視
           const tr = rackTravel(rack) / 2
-          rack.disp = Math.max(-tr, Math.min(tr, rack.disp - dTheta * r))
+          const next = rack.disp - dTheta * r
+          const clamped = Math.max(-tr, Math.min(tr, next))
+          // 端っこに当たった → マイクロスイッチ発動
+          if (clamped !== next && Math.abs(dTheta) > 1e-9) {
+            const mode = rack.endStop ?? 'none'
+            const driver = mode !== 'none' && st.driver ? this.world.byId(st.driver) : undefined
+            if (driver && driver.kind === 'karakuriMotor') {
+              if (mode === 'reverse') {
+                this.karakuriDir.set(driver.id, (this.karakuriDir.get(driver.id) ?? 1) === 1 ? -1 : 1)
+              } else if (mode === 'stop') {
+                this.karakuriStopped.add(driver.id)
+              }
+            }
+          }
+          rack.disp = clamped
         }
       }
     }
@@ -136,9 +154,11 @@ export class Simulation {
   startShow(durationSec: number): void {
     this.showTimer = durationSec
     this.showDuration = durationSec
+    this.karakuriStopped.clear()   // 止まっていたモーターも次のショーで動き出す
   }
 
   testKarakuri(id: PartId, sec = 6): void {
     this.karakuriTest.set(id, sec)
+    this.karakuriStopped.delete(id)
   }
 }

@@ -18,10 +18,10 @@ const ITEMS: PaletteItem[] = [
   { key: 'handMin', label: 'ふんしん', icon: '🕑', make: pos => ({ kind: 'hand', id: uid(), pos, hand: 'min', design: 'classic', mountId: null, offset: 0 }) },
   { key: 'handHour', label: 'じしん', icon: '🕐', make: pos => ({ kind: 'hand', id: uid(), pos, hand: 'hour', design: 'classic', mountId: null, offset: 0 }) },
   { key: 'dial', label: 'もじばん', icon: '🕛', make: pos => ({ kind: 'dial', id: uid(), pos, style: 'classic' }) },
-  { key: 'rack', label: 'ラック', icon: '➖', make: pos => ({ kind: 'rack', id: uid(), pos, length: 240, disp: 0, layer: 0 }) },
+  { key: 'rack', label: 'ラック', icon: '➖', make: pos => ({ kind: 'rack', id: uid(), pos, length: 240, disp: 0, layer: 0, endStop: 'reverse' }) },
   { key: 'cam', label: 'カム', icon: '🥚', make: pos => ({ kind: 'cam', id: uid(), pos, profile: 'egg', mountId: null }) },
   { key: 'doll', label: 'にんぎょう', icon: '🎎', make: pos => ({ kind: 'doll', id: uid(), pos, doll: 'dancer', mountId: null }) },
-  { key: 'karakuri', label: 'からくりモーター', icon: '♪', make: pos => ({ kind: 'karakuriMotor', id: uid(), pos, teeth: 12, rpm: 20, layer: 0 }) },
+  { key: 'karakuri', label: 'からくり<br>モーター', icon: '🎠', make: pos => ({ kind: 'karakuriMotor', id: uid(), pos, teeth: 12, rpm: 20, layer: 0 }) },
 ]
 
 export function initPalette(app: App): void {
