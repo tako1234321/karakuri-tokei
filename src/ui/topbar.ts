@@ -1,6 +1,7 @@
 import type { App } from '../app'
 import { MELODIES } from '../audio/melodies'
-import { exportJson, importJson, loadSlot, saveSlot, slotList } from '../storage/saves'
+import { loadSample } from '../data/samples'
+import { exportJson, importJson, loadSlot, saveSlot, slotList, wasMigrated } from '../storage/saves'
 import { button, closeModal, showModal } from './modal'
 
 export function initTopbar(app: App): { update: () => void } {
@@ -15,6 +16,7 @@ export function initTopbar(app: App): { update: () => void } {
       <button class="btn tbSpeed" data-speed="60">×60</button>
       <button class="btn tbSpeed" data-speed="600">×600</button>
     </div>
+    <button class="btn tbBtn" id="tbFront">🎯 しょうめん</button>
     <button class="btn tbBtn" id="tbCheck">✔ チェック</button>
     <button class="btn tbBtn" id="tbShow">♪ ショー</button>
     <button class="btn tbBtn" id="tbMode">🧭 ガイド</button>
@@ -34,6 +36,10 @@ export function initTopbar(app: App): { update: () => void } {
       app.sim.clock.speed = parseInt(b.dataset.speed!, 10)
       el.querySelectorAll('.tbSpeed').forEach(x => x.classList.toggle('active', x === b))
     })
+  })
+
+  el.querySelector('#tbFront')!.addEventListener('click', () => {
+    app.camera.resetFront()
   })
 
   el.querySelector('#tbCheck')!.addEventListener('click', () => {
@@ -65,6 +71,20 @@ export function initTopbar(app: App): { update: () => void } {
 
 function openMenu(app: App): void {
   showModal('メニュー', body => {
+    // おてほん
+    const sec0 = document.createElement('div')
+    sec0.className = 'menuSection'
+    sec0.innerHTML = '<div class="menuHead">🕰 おてほん</div>'
+    sec0.appendChild(button('うごく とけいを よみこむ', () => {
+      loadSample(app)
+      closeModal()
+    }))
+    const hint0 = document.createElement('div')
+    hint0.className = 'menuHelp'
+    hint0.innerHTML = 'ほんものの とけいと おなじ しくみ(どうじく)で うごく おてほんだよ。<br>いまの ばんめんは ↩ で もどせるよ。'
+    sec0.appendChild(hint0)
+    body.appendChild(sec0)
+
     // ほぞん / よみこみ
     const sec1 = document.createElement('div')
     sec1.className = 'menuSection'
@@ -91,7 +111,7 @@ function openMenu(app: App): void {
             app.world.parts = d.parts
             app.settings.melody = d.melody
             app.select(null)
-            app.toast('よみこんだよ!')
+            app.toast(wasMigrated() ? 'ふるい さくひんを あたらしいかたちに なおしたよ' : 'よみこんだよ!')
           }
           closeModal()
         }))
@@ -175,11 +195,13 @@ function openMenu(app: App): void {
     sec6.innerHTML = `
       <div class="menuHead">📖 つかいかた</div>
       <div class="menuHelp">
-        ・ひだりの パーツを ばんめんに ドラッグしておこう<br>
+        ・うえの パーツを ばんめんに ドラッグしておこう<br>
         ・はぐるまどうしを ちかづけると かみあうよ<br>
+        ・はぐるまを べつのはぐるまの まんなかに おくと、おくゆきちがいで かさなるよ(どうじく!)<br>
         ・はり・カム・にんぎょうは はぐるまのじくに のせよう<br>
-        ・2ほんゆびで ズーム、ゆびドラッグで うごかせるよ<br>
-        ・「×60」「×600」で じかんを はやおくり!<br>
+        ・なにもない ところを ゆび1ぽんで なぞると、ぐるっと まわして よこから みられるよ<br>
+        ・「🎯しょうめん」で もとのむきに もどるよ<br>
+        ・2ほんゆびで ズーム、「×60」「×600」で はやおくり!<br>
         ・まいしょうじ(0ふん)に メロディが ながれて からくりが うごくよ
       </div>`
     body.appendChild(sec6)

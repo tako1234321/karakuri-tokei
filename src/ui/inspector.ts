@@ -1,6 +1,6 @@
 import type { App } from '../app'
 import { pendulumPeriod } from '../core/escapement'
-import type { Part } from '../core/types'
+import { MAX_LAYER, isAxle, type Part } from '../core/types'
 import { CAM_DEFS } from '../core/cam'
 import { DIAL_DEFS } from '../data/dials'
 import { DOLL_DEFS, dollDef } from '../data/dolls'
@@ -150,6 +150,13 @@ export function initInspector(app: App): { refresh: () => void } {
       ], () => (p.front ? 'front' : 'back'), v => { p.front = v === 'front' }))
     } else if (p.kind === 'rack') {
       el.appendChild(numberEditor('ながさ', () => p.length, v => { p.length = v }, [160, 200, 240, 280, 320, 360]))
+    }
+
+    // 奥行きの層(軸パーツとラック)
+    if (isAxle(p) || p.kind === 'rack') {
+      const span = p.kind === 'gear' ? p.wheels.length : 1
+      const list = Array.from({ length: MAX_LAYER - span + 2 }, (_, i) => i)
+      el.appendChild(numberEditor('おくゆき(だん)', () => p.layer, v => { p.layer = v }, list))
     }
 
     const del = mkBtn('🗑 すてる', 'btn insDelete', () => {

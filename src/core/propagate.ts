@@ -29,6 +29,7 @@ export function buildGraph(world: World): Graph {
       let meshed = false
       for (let ai = 0; ai < wa.length; ai++) {
         for (let bi = 0; bi < wb.length; bi++) {
+          if (wa[ai].layer !== wb[bi].layer) continue   // 同じ層のホイール同士だけ噛み合う
           const target = wa[ai].radius + wb[bi].radius
           if (Math.abs(d - target) < MESH_EPS) {
             meshes.push({ a: A.id, ai, b: B.id, bi })
@@ -37,10 +38,11 @@ export function buildGraph(world: World): Graph {
         }
       }
       if (!meshed) {
-        // 「あとちょっとで噛み合うのに近すぎて潰れている」ときだけ警告する。
-        // (深い重なりは実物の時計と同じく高さ違いの配置とみなして許す)
+        // 同じ層で「あとちょっとで噛み合うのに近すぎて潰れている」ときだけ警告する。
+        // (別の層どうしの重なりは実物の時計と同じく高さ違いの配置なので許す)
         for (const w1 of wa) {
           for (const w2 of wb) {
+            if (w1.layer !== w2.layer) continue
             const target = w1.radius + w2.radius
             if (d < target - MESH_EPS && d > target - MODULE * 5.5) {
               interfering.add(A.id)
@@ -60,6 +62,7 @@ export function buildGraph(world: World): Graph {
       if (!inX || a.pos.y > r.pos.y) continue
       const wa = wheelsOf(a)
       for (let wi = 0; wi < wa.length; wi++) {
+        if (wa[wi].layer !== r.layer) continue
         if (Math.abs(rackPitchY(r) - a.pos.y - wa[wi].radius) < MESH_EPS) {
           racks.push({ gearId: a.id, wheelIndex: wi, rackId: r.id })
         }

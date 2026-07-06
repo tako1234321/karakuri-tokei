@@ -1,5 +1,9 @@
 // メロディの譜面データ(すべてパブリックドメインの曲)
 // n: 音名(null は休符)、d: 拍数
+// voice: リード音色(bell=オルゴール / flute=笛 / strings=弦)
+// accomp: 伴奏トラック(小さめのベルで鳴る)
+
+export type Voice = 'bell' | 'flute' | 'strings'
 
 export interface MelodyNote { n: string | null; d: number }
 
@@ -8,6 +12,8 @@ export interface Melody {
   label: string
   bpm: number
   notes: MelodyNote[]
+  voice?: Voice
+  accomp?: MelodyNote[]
 }
 
 const westminster: Melody = {
@@ -175,9 +181,169 @@ const dollsDream: Melody = {
   ],
 }
 
+// ---------- RE511B(SEIKO DREAMLAND)ゆかりの曲 ----------
+
+// カノン(パッヘルベル)
+const canon: Melody = {
+  key: 'canon',
+  label: 'カノン',
+  bpm: 56,
+  voice: 'strings',
+  notes: [
+    { n: 'F#5', d: 2 }, { n: 'E5', d: 2 }, { n: 'D5', d: 2 }, { n: 'C#5', d: 2 },
+    { n: 'B4', d: 2 }, { n: 'A4', d: 2 }, { n: 'B4', d: 2 }, { n: 'C#5', d: 2 },
+    { n: 'D5', d: 1 }, { n: 'C#5', d: 1 }, { n: 'B4', d: 1 }, { n: 'A4', d: 1 },
+    { n: 'G4', d: 1 }, { n: 'F#4', d: 1 }, { n: 'G4', d: 1 }, { n: 'E4', d: 1 },
+    { n: 'D4', d: 4 },
+  ],
+  accomp: [
+    { n: 'D3', d: 2 }, { n: 'A3', d: 2 }, { n: 'B3', d: 2 }, { n: 'F#3', d: 2 },
+    { n: 'G3', d: 2 }, { n: 'D3', d: 2 }, { n: 'G3', d: 2 }, { n: 'A3', d: 2 },
+    { n: 'D3', d: 2 }, { n: 'A3', d: 2 }, { n: 'B3', d: 2 }, { n: 'F#3', d: 2 },
+    { n: 'D3', d: 4 },
+  ],
+}
+
+// 春の歌(メンデルスゾーン)
+const springSong: Melody = {
+  key: 'spring',
+  label: 'はるのうた',
+  bpm: 72,
+  voice: 'flute',
+  notes: [
+    { n: 'A4', d: 0.5 }, { n: 'B4', d: 0.5 }, { n: 'C#5', d: 0.5 }, { n: 'D5', d: 0.5 },
+    { n: 'E5', d: 1.5 }, { n: 'E5', d: 0.5 }, { n: 'D5', d: 1 }, { n: 'C#5', d: 1 },
+    { n: 'B4', d: 1.5 }, { n: 'C#5', d: 0.5 }, { n: 'B4', d: 1 }, { n: 'A4', d: 1 },
+    { n: 'G#4', d: 1.5 }, { n: 'A4', d: 0.5 }, { n: 'B4', d: 1 }, { n: 'E4', d: 1 },
+    { n: 'A4', d: 3 },
+  ],
+}
+
+// ウィーンの森の物語(ヨハン・シュトラウス2世)
+const viennaWoods: Melody = {
+  key: 'vienna',
+  label: 'ウィーンのもり',
+  bpm: 170,
+  voice: 'strings',
+  notes: [
+    { n: 'G4', d: 1 }, { n: 'C5', d: 1 }, { n: 'C5', d: 1 },
+    { n: 'C5', d: 2 }, { n: 'B4', d: 1 },
+    { n: 'C5', d: 1 }, { n: 'E5', d: 1 }, { n: 'E5', d: 1 },
+    { n: 'E5', d: 2 }, { n: 'D5', d: 1 },
+    { n: 'E5', d: 1 }, { n: 'G5', d: 1 }, { n: 'G5', d: 1 },
+    { n: 'G5', d: 2 }, { n: 'F5', d: 1 },
+    { n: 'E5', d: 2 }, { n: 'D5', d: 1 }, { n: 'C5', d: 3 },
+  ],
+}
+
+// メヌエット(ボッケリーニ)
+const minuet: Melody = {
+  key: 'minuet',
+  label: 'メヌエット',
+  bpm: 104,
+  voice: 'strings',
+  notes: [
+    { n: 'A4', d: 0.5 }, { n: 'B4', d: 0.5 }, { n: 'C#5', d: 0.5 }, { n: 'D5', d: 0.5 },
+    { n: 'E5', d: 1 }, { n: 'A4', d: 1 }, { n: 'A4', d: 1 },
+    { n: 'B4', d: 0.5 }, { n: 'C#5', d: 0.5 }, { n: 'D5', d: 0.5 }, { n: 'E5', d: 0.5 },
+    { n: 'F#5', d: 1 }, { n: 'B4', d: 1 }, { n: 'B4', d: 1 },
+    { n: 'E5', d: 1 }, { n: 'F#5', d: 0.5 }, { n: 'E5', d: 0.5 }, { n: 'D5', d: 0.5 }, { n: 'C#5', d: 0.5 },
+    { n: 'B4', d: 1 }, { n: 'C#5', d: 0.5 }, { n: 'B4', d: 0.5 }, { n: 'A4', d: 0.5 }, { n: 'G#4', d: 0.5 },
+    { n: 'A4', d: 3 },
+  ],
+}
+
+// ジュ・トゥ・ヴ(サティ)
+const jeTeVeux: Melody = {
+  key: 'jeteveux',
+  label: 'ジュ・トゥ・ヴ',
+  bpm: 152,
+  voice: 'flute',
+  notes: [
+    { n: 'G4', d: 1 },
+    { n: 'C5', d: 1 }, { n: 'D5', d: 1 }, { n: 'E5', d: 1 },
+    { n: 'G5', d: 2 }, { n: 'E5', d: 1 },
+    { n: 'D5', d: 1 }, { n: 'C5', d: 1 }, { n: 'D5', d: 1 },
+    { n: 'E5', d: 2 }, { n: 'C5', d: 1 },
+    { n: 'A4', d: 1 }, { n: 'B4', d: 1 }, { n: 'C5', d: 1 },
+    { n: 'E5', d: 2 }, { n: 'D5', d: 1 },
+    { n: 'C5', d: 2 }, { n: 'B4', d: 1 }, { n: 'C5', d: 3 },
+  ],
+}
+
+// 花の歌(ランゲ)
+const flowerSong: Melody = {
+  key: 'flower',
+  label: 'はなのうた',
+  bpm: 84,
+  voice: 'flute',
+  notes: [
+    { n: 'C4', d: 0.5 }, { n: 'F4', d: 0.5 }, { n: 'A4', d: 0.5 }, { n: 'C5', d: 0.5 },
+    { n: 'F5', d: 1.5 }, { n: 'E5', d: 0.5 }, { n: 'D5', d: 1 },
+    { n: 'C5', d: 1.5 }, { n: 'A4', d: 0.5 }, { n: 'F4', d: 1 },
+    { n: 'G4', d: 1 }, { n: 'A4', d: 0.5 }, { n: 'G4', d: 0.5 }, { n: 'F4', d: 1 }, { n: 'E4', d: 1 },
+    { n: 'F4', d: 3 },
+  ],
+}
+
+// 調子の良い鍛冶屋(ヘンデル)
+const blacksmith: Melody = {
+  key: 'blacksmith',
+  label: 'かじやのうた',
+  bpm: 96,
+  voice: 'bell',
+  notes: [
+    { n: 'E4', d: 0.5 }, { n: 'F4', d: 0.5 },
+    { n: 'G4', d: 1 }, { n: 'G4', d: 0.5 }, { n: 'F4', d: 0.5 }, { n: 'G4', d: 0.5 }, { n: 'E4', d: 0.5 },
+    { n: 'F4', d: 1 }, { n: 'F4', d: 0.5 }, { n: 'E4', d: 0.5 }, { n: 'F4', d: 0.5 }, { n: 'D4', d: 0.5 },
+    { n: 'E4', d: 1 }, { n: 'E4', d: 0.5 }, { n: 'D4', d: 0.5 }, { n: 'E4', d: 0.5 }, { n: 'C4', d: 0.5 },
+    { n: 'D4', d: 0.5 }, { n: 'E4', d: 0.5 }, { n: 'F4', d: 0.5 }, { n: 'D4', d: 0.5 }, { n: 'C4', d: 2 },
+  ],
+}
+
+// 女学生(ワルトトイフェル「エステュディアンティナ」)
+const estudiantina: Melody = {
+  key: 'estudiantina',
+  label: 'じょがくせい',
+  bpm: 168,
+  voice: 'strings',
+  notes: [
+    { n: 'A4', d: 1 },
+    { n: 'D5', d: 2 }, { n: 'F#5', d: 1 },
+    { n: 'A5', d: 2 }, { n: 'F#5', d: 1 },
+    { n: 'E5', d: 2 }, { n: 'G5', d: 1 },
+    { n: 'F#5', d: 3 },
+    { n: 'D5', d: 2 }, { n: 'F#5', d: 1 },
+    { n: 'A5', d: 2 }, { n: 'F#5', d: 1 },
+    { n: 'E5', d: 2 }, { n: 'C#5', d: 1 },
+    { n: 'D5', d: 3 },
+  ],
+}
+
+// 舞踏の時間に(かろやかなサロンワルツ)
+const danceHour: Melody = {
+  key: 'dancehour',
+  label: 'ぶとうのじかんに',
+  bpm: 160,
+  voice: 'flute',
+  notes: [
+    { n: 'G4', d: 1 },
+    { n: 'E5', d: 1 }, { n: 'E5', d: 1 }, { n: 'F5', d: 1 },
+    { n: 'E5', d: 2 }, { n: 'C5', d: 1 },
+    { n: 'D5', d: 1 }, { n: 'D5', d: 1 }, { n: 'E5', d: 1 },
+    { n: 'D5', d: 2 }, { n: 'B4', d: 1 },
+    { n: 'C5', d: 1 }, { n: 'E5', d: 1 }, { n: 'G5', d: 1 },
+    { n: 'E5', d: 2 }, { n: 'D5', d: 1 },
+    { n: 'C5', d: 3 },
+  ],
+}
+
 export const MELODIES: Melody[] = [
-  westminster, kirakira, greensleeves,
-  traumerei, hoursDance, danube, dollsDream,
+  // RE511B ゆかりのならび
+  danceHour, dollsDream, estudiantina, springSong, viennaWoods,
+  minuet, jeTeVeux, canon, flowerSong, blacksmith,
+  // これまでの曲
+  westminster, kirakira, greensleeves, traumerei, hoursDance, danube,
 ]
 
 export function melodyByKey(key: string): Melody {

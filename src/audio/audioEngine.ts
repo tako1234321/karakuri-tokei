@@ -1,4 +1,4 @@
-import type { Melody } from './melodies'
+import type { Melody, Voice } from './melodies'
 
 // Web Audio による音の合成。音源ファイルは使わない。
 // iOSではユーザー操作(タップ)後でないと音が出せないため、
@@ -65,6 +65,75 @@ export class AudioEngine {
     }
   }
 
+  // 笛の音(サイン波+ビブラート)
+  flute(freq: number, when: number, dur = 1.0, vel = 0.35): void {
+    if (!this.ready) return
+    const ctx = this.ctx!
+    const end = when + Math.max(0.25, dur)
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, when)
+    g.gain.exponentialRampToValueAtTime(vel, when + 0.06)
+    g.gain.setValueAtTime(vel, Math.max(when + 0.06, end - 0.12))
+    g.gain.exponentialRampToValueAtTime(0.0001, end)
+    g.connect(this.master!)
+
+    const o = ctx.createOscillator()
+    o.type = 'sine'
+    o.frequency.value = freq
+    // ビブラート(少し遅れてかかる)
+    const vib = ctx.createOscillator()
+    vib.frequency.value = 5.5
+    const vg = ctx.createGain()
+    vg.gain.setValueAtTime(0, when)
+    vg.gain.linearRampToValueAtTime(freq * 0.008, when + 0.3)
+    vib.connect(vg).connect(o.frequency)
+    // かすかな倍音
+    const h = ctx.createOscillator()
+    h.type = 'sine'
+    h.frequency.value = freq * 2
+    const hg = ctx.createGain()
+    hg.gain.value = 0.12
+    h.connect(hg).connect(g)
+    o.connect(g)
+    o.start(when); o.stop(end + 0.05)
+    h.start(when); h.stop(end + 0.05)
+    vib.start(when); vib.stop(end + 0.05)
+  }
+
+  // 弦の音(デチューンした2本のノコギリ波+ローパス)
+  strings(freq: number, when: number, dur = 1.0, vel = 0.3): void {
+    if (!this.ready) return
+    const ctx = this.ctx!
+    const end = when + Math.max(0.3, dur)
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, when)
+    g.gain.exponentialRampToValueAtTime(vel, when + 0.13)
+    g.gain.setValueAtTime(vel, Math.max(when + 0.13, end - 0.2))
+    g.gain.exponentialRampToValueAtTime(0.0001, end + 0.1)
+    const lp = ctx.createBiquadFilter()
+    lp.type = 'lowpass'
+    lp.frequency.value = Math.min(5200, freq * 4.5)
+    lp.Q.value = 0.4
+    g.connect(lp).connect(this.master!)
+    for (const cents of [-5, 5]) {
+      const o = ctx.createOscillator()
+      o.type = 'sawtooth'
+      o.frequency.value = freq
+      o.detune.value = cents
+      const og = ctx.createGain()
+      og.gain.value = 0.5
+      o.connect(og).connect(g)
+      o.start(when)
+      o.stop(end + 0.15)
+    }
+  }
+
+  private playNote(voice: Voice, freq: number, when: number, dur: number, vel: number): void {
+    if (voice === 'flute') this.flute(freq, when, dur, vel)
+    else if (voice === 'strings') this.strings(freq, when, dur, vel)
+    else this.bell(freq, when, Math.min(2.4, 0.5 + dur * 1.6), vel)
+  }
+
   // 時打ちの「ボーン」
   strike(when: number): void {
     this.bell(164.81, when, 2.8, 0.7)   // E3
@@ -123,11 +192,19 @@ export class AudioEngine {
 
     if (this.ready) {
       const t0 = this.ctx!.currentTime + 0.08
+      const voice = melody.voice ?? 'bell'
       let acc = 0
       for (const n of melody.notes) {
-        // 音の長さに合わせて余韻を変える(速い曲は歯切れよく、遅い曲は響かせる)
-        if (n.n) this.bell(noteFreq(n.n), t0 + acc, Math.min(2.4, 0.5 + n.d * beat * 1.6), 0.38)
+        if (n.n) this.playNote(voice, noteFreq(n.n), t0 + acc, n.d * beat, voice === 'bell' ? 0.38 : 0.32)
         acc += n.d * beat
+      }
+      // 伴奏(小さめのベル)
+      if (melody.accomp) {
+        let acc2 = 0
+        for (const n of melody.accomp) {
+          if (n.n) this.bell(noteFreq(n.n), t0 + acc2, Math.min(2.6, 0.7 + n.d * beat * 1.4), 0.15)
+          acc2 += n.d * beat
+        }
       }
       for (let i = 0; i < strikes; i++) {
         this.strike(t0 + strikesStart + i * strikeGap)

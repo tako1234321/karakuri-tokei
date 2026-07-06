@@ -8,11 +8,16 @@ export function outerRadius(teeth: number): number {
   return pitchRadius(teeth) + MODULE
 }
 
-// 軸パーツが持つ歯車(ホイール)の一覧
+// 軸パーツが持つ歯車(ホイール)の一覧。ホイールiは層 layer+i に存在する
 export function wheelsOf(p: AxlePart): Wheel[] {
-  if (p.kind === 'gear') return p.wheels.map(t => ({ teeth: t, radius: pitchRadius(t) }))
-  if (p.kind === 'escapement') return [{ teeth: p.escapeTeeth, radius: pitchRadius(p.escapeTeeth) }]
-  return [{ teeth: p.teeth, radius: pitchRadius(p.teeth) }]
+  if (p.kind === 'gear') return p.wheels.map((t, i) => ({ teeth: t, radius: pitchRadius(t), layer: p.layer + i }))
+  if (p.kind === 'escapement') return [{ teeth: p.escapeTeeth, radius: pitchRadius(p.escapeTeeth), layer: p.layer }]
+  return [{ teeth: p.teeth, radius: pitchRadius(p.teeth), layer: p.layer }]
+}
+
+// パーツが占有する層の一覧
+export function layersOf(p: AxlePart): number[] {
+  return wheelsOf(p).map(w => w.layer)
 }
 
 export function maxRadius(p: AxlePart): number {

@@ -6,10 +6,11 @@ import { melodyByKey } from './audio/melodies'
 import { pitchRadius } from './core/gear'
 import { Simulation } from './core/simulation'
 import { World, uid } from './core/world'
-import { Camera } from './render/camera'
 import { gearPath } from './render/gearPath'
-import { draw, spawnConfetti } from './render/renderer'
-import { loadSlot, saveSlot } from './storage/saves'
+import { Camera3 } from './render3/camera3'
+import { spawnConfetti } from './render3/effectsOverlay'
+import { draw3, initRender3, resize3 } from './render3/renderer3'
+import { loadSlot, saveSlot, wasMigrated } from './storage/saves'
 import { initCheckPanel } from './ui/checkPanel'
 import { initGuide } from './ui/guide'
 import { initInspector } from './ui/inspector'
@@ -18,14 +19,18 @@ import { initPointer } from './ui/pointer'
 import { initTopbar } from './ui/topbar'
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
-const ctx = canvas.getContext('2d')!
+const overlay = document.getElementById('overlay') as HTMLCanvasElement
+const overlayCtx = overlay.getContext('2d')!
 const world = new World()
 const sim = new Simulation(world)
-const camera = new Camera()
+const camera = new Camera3()
 const audio = new AudioEngine()
 
+// 針を同軸スタックに乗せるとき「めあての速さの軸」を優先できるようにする
+world.rpmFracOf = id => sim.axles.get(id)?.rpmFrac ?? null
+
 const app: App = {
-  world, sim, camera, canvas, ctx, audio,
+  world, sim, camera, canvas, overlayCtx, audio,
   selectedId: null,
   dragGhostPart: null,
   previewPartId: null,
@@ -87,6 +92,7 @@ const inspector = initInspector(app)
 const topbar = initTopbar(app)
 const checkPanel = initCheckPanel(app)
 const guide = initGuide(app)
+initRender3(app)
 
 // ---------- 初期シーン ----------
 
@@ -94,12 +100,16 @@ const auto = loadSlot('auto')
 if (auto && auto.parts.length > 0) {
   world.parts = auto.parts
   app.settings.melody = auto.melody
+  if (wasMigrated()) {
+    setTimeout(() => toast('ふるい さくひんを あたらしいかたちに なおしたよ'), 1600)
+  }
 } else {
-  world.add({ kind: 'motor', id: uid(), pos: { x: -170, y: 40 }, teeth: 12, rpm: 1 })
+  world.add({ kind: 'motor', id: uid(), pos: { x: -170, y: 40 }, teeth: 12, rpm: 1, layer: 0 })
   world.add({
     kind: 'gear', id: uid(),
     pos: { x: -170 + pitchRadius(12) + pitchRadius(40), y: 40 },
     wheels: [40],
+    layer: 0,
   })
 }
 
@@ -135,11 +145,21 @@ document.getElementById('startBtn')!.addEventListener('click', () => {
   try { void navigator.storage?.persist?.() } catch { /* */ }
   titleEl.remove()
   appEl.hidden = false
-  camera.resize(canvas)
+  resize3(app)
 })
 
 window.addEventListener('resize', () => {
-  if (!appEl.hidden) camera.resize(canvas)
+  if (!appEl.hidden) resize3(app)
+})
+
+// iOSでまれに起きるWebGLコンテキストロストからの復帰
+canvas.addEventListener('webglcontextlost', e => {
+  e.preventDefault()
+  saveSlot('auto', world, app.settings.melody)   // 作業内容を守ってから
+  toast('がめんを なおしてるよ…')
+})
+canvas.addEventListener('webglcontextrestored', () => {
+  location.reload()
 })
 
 // iOS Safariの「もどる」エッジスワイプ対策:
@@ -160,29 +180,29 @@ document.addEventListener('gesturechange', e => e.preventDefault(), { passive: f
 // キーボード表示や回転でスクロール位置がずれたら元に戻す
 window.visualViewport?.addEventListener('resize', () => {
   window.scrollTo(0, 0)
-  if (!appEl.hidden) camera.resize(canvas)
+  if (!appEl.hidden) resize3(app)
 })
 window.addEventListener('orientationchange', () => {
   setTimeout(() => {
     window.scrollTo(0, 0)
-    if (!appEl.hidden) camera.resize(canvas)
+    if (!appEl.hidden) resize3(app)
   }, 300)
 })
 
 // ---------- メインループ ----------
 
-let last = performance.now()
+let lastT = performance.now()
 let autosaveAcc = 0
 
 function frame(now: number): void {
-  const dt = Math.min(0.1, (now - last) / 1000)
-  last = now
+  const dt = Math.min(0.1, (now - lastT) / 1000)
+  lastT = now
   if (!appEl.hidden) {
     app.dt = dt
     app.time += dt
-    if (canvas.width === 0) camera.resize(canvas)
+    if (canvas.width === 0) resize3(app)
     sim.update(dt)
-    draw(app)
+    draw3(app)
     topbar.update()
     checkPanel.update()
     guide.update()

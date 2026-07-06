@@ -7,29 +7,38 @@ export interface Vec2 { x: number; y: number }
 // 歯1枚あたりの大きさ(モジュール)。全歯車で統一する。
 export const MODULE = 7
 
+// 奥行きレイヤー(層)。ホイールは 0..MAX_LAYER のどこかの層に存在し、
+// 同じ層のホイール同士だけが噛み合う。同じ位置でも層が違えば
+// 別の軸として共存できる(=同軸に秒針・分針・時針を重ねられる)。
+export const MAX_LAYER = 7
+
 export type HandKind = 'sec' | 'min' | 'hour'
 
 export interface MotorPart {
   kind: 'motor'; id: PartId; pos: Vec2
   teeth: number   // 出力ピニオンの歯数
   rpm: number     // 1分あたりの回転数(標準は1)
+  layer: number
 }
 
 export interface GearPart {
   kind: 'gear'; id: PartId; pos: Vec2
   wheels: number[]  // 歯数のリスト。要素2つで同軸2段ギア(大→小)
+  layer: number     // wheels[i] は層 layer+i に存在する
 }
 
 export interface EscapementPart {
   kind: 'escapement'; id: PartId; pos: Vec2
   escapeTeeth: number       // ガンギ車の歯数
   pendulumLength: number    // 振り子の長さ(メートル)
+  layer: number
 }
 
 export interface KarakuriMotorPart {
   kind: 'karakuriMotor'; id: PartId; pos: Vec2
   teeth: number
   rpm: number   // ショー中の回転数(1分あたり)
+  layer: number
 }
 
 export interface HandPart {
@@ -44,6 +53,7 @@ export interface RackPart {
   kind: 'rack'; id: PartId; pos: Vec2
   length: number
   disp: number   // スライド変位(-travel/2 .. +travel/2)
+  layer: number
 }
 
 export interface CamPart {
@@ -75,7 +85,7 @@ export function isAxle(p: Part): p is AxlePart {
   return p.kind === 'motor' || p.kind === 'gear' || p.kind === 'escapement' || p.kind === 'karakuriMotor'
 }
 
-export interface Wheel { teeth: number; radius: number }
+export interface Wheel { teeth: number; radius: number; layer: number }
 
 // 各軸の毎フレームの状態(伝播計算の結果)
 export interface AxleState {

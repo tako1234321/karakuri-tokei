@@ -2,7 +2,7 @@ import type { AudioEngine } from './audio/audioEngine'
 import type { Simulation } from './core/simulation'
 import type { Part, PartId } from './core/types'
 import type { World } from './core/world'
-import type { Camera } from './render/camera'
+import type { Camera3 } from './render3/camera3'
 
 export interface Particle {
   x: number; y: number
@@ -15,9 +15,9 @@ export interface Particle {
 export interface App {
   world: World
   sim: Simulation
-  camera: Camera
-  canvas: HTMLCanvasElement
-  ctx: CanvasRenderingContext2D
+  camera: Camera3
+  canvas: HTMLCanvasElement              // WebGL キャンバス
+  overlayCtx: CanvasRenderingContext2D   // 紙吹雪などの2Dオーバーレイ
   audio: AudioEngine
   selectedId: PartId | null
   dragGhostPart: Part | null        // パレットから配置中のパーツ

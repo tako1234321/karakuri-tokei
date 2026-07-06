@@ -1,6 +1,6 @@
 import type { App } from '../app'
 import { MISSIONS } from '../data/missions'
-import { spawnConfetti } from '../render/renderer'
+import { spawnConfetti } from '../render3/effectsOverlay'
 
 const KEY = 'karakuri:guide'
 

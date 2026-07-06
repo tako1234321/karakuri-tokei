@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-「からくりとけい」— 小学校低学年向けのからくり時計シミュレーターPWA。モーター・歯車・振り子(脱進機)・カム・ラック&ピニオンを盤面にドラッグ配置して噛み合わせ、時計の針やからくり人形を動かす教育アプリ。iPhone/iPad の Safari(ホーム画面追加)がメインターゲット。
+「からくりとけい」— 小学校低学年向けのからくり時計シミュレーター PWA(**Three.js による常時3D表示**)。モーター・歯車・振り子(脱進機)・カム・ラック&ピニオンを盤面にドラッグ配置して噛み合わせ、時計の針やからくり人形を動かす教育アプリ。奥行きレイヤー(層)により実物同様の**同軸(秒針・分針・時針を中心に重ねる)**が組める。iPhone/iPad の Safari(ホーム画面追加)がメインターゲット。
 
 - UI文言は**全ひらがな**(漢字を使わない)。ユーザー向けメッセージ・ラベルを追加するときもひらがなで書く
-- ランタイム依存ゼロ(Vanilla TS + Canvas 2D + Web Audio)。ライブラリ追加は原則しない
+- ランタイム依存は **three のみ**(+Vanilla TS + Web Audio 合成)。これ以上のライブラリ追加は原則しない
 
 ## コマンド
 
@@ -33,15 +33,18 @@ main へ push すると GitHub Actions(.github/workflows/deploy.yml)が自動ビ
 レイヤー構成(依存方向は下から上へ一方向):
 
 - **src/core/** — 純粋ロジック。DOM/Canvas に依存しない。シミュレーションの心臓部
-- **src/render/** — Canvas 2D 描画。`renderer.ts` が毎フレーム全体を描く
-- **src/ui/** — DOMベースのUI(パレット、インスペクタ、トップバー、ガイド等)
-- **src/data/** — 人形・針・文字盤・ミッションの宣言的定義
-- **src/audio/** — Web Audio 合成(音源ファイルなし)
+- **src/render3/** — Three.js 描画。`renderer3.ts` が world.parts とシーングラフを毎フレーム突き合わせる(`visuals.ts` の PartVisual、revKey 変化時のみジオメトリ再構築)。座標系変換は `space.ts` に一元化: シム(y下・正角=時計回り)→ three は (x,−y,z)・rotation.z=−θ
+- **src/render/** — Canvas 2D の共用部品(dollRenderer=人形の絵→CanvasTexture、dialFace=文字盤テクスチャ、gearPath=タイトル画面用、partMetrics=ヒット半径)
+- **src/ui/** — DOMベースのUI(パレット、インスペクタ、トップバー、ガイド等)。pointer.ts はレイキャストで 1本指=パーツドラッグ/空白オービット、2本指=ズーム+パン
+- **src/data/** — 人形・針・文字盤・ミッション・お手本シーン(samples.ts、同軸センター時計)の宣言的定義
+- **src/audio/** — Web Audio 合成(音源ファイルなし)。ボイス3種(bell/flute/strings)+伴奏トラック
 - **src/main.ts** — `App` オブジェクト(src/app.ts の interface)を組み立て、rAFループを回す
 
 ### コアの設計原則(複数ファイルにまたがる不変条件)
 
-1. **回転は「角度の伝播」で計算する**(core/propagate.ts)。毎フレーム、噛み合いグラフを幾何から作り直し(`buildGraph`: 中心距離 ≒ ピッチ円半径の和)、動力(モーター/脱進機/からくりモーター)から BFS で各軸の絶対角度を決める。角速度の積分はしないので累積誤差が出ない。位相オフセットの式により歯と谷が見た目にも正しく噛み合う。ループの角速度矛盾や動力競合は連結成分ごと `jammed` にする(「ギギギ…」演出)
+1. **回転は「角度の伝播」で計算する**(core/propagate.ts)。毎フレーム、噛み合いグラフを幾何から作り直し(`buildGraph`: **同じ層のホイール同士**かつ中心距離 ≒ ピッチ円半径の和)、動力(モーター/脱進機/からくりモーター)から BFS で各軸の絶対角度を決める。角速度の積分はしないので累積誤差が出ない。位相オフセットの式により歯と谷が見た目にも正しく噛み合う。ループの角速度矛盾や動力競合は連結成分ごと `jammed` にする(「ギギギ…」演出)
+
+1.5. **レイヤー(層)システム**: 軸パーツとラックは `layer`(0..MAX_LAYER=7)を持ち、gear の wheels[i] は層 layer+i に存在(gear.ts `wheelsOf`)。同位置・別層の軸は独立に共存=**同軸**。スナップ(world.ts)は ①同軸スナップ(中心30px以内→空き層に重ねる)②噛み合いスナップ(層は相手に自動調整)の順。針の tryMount は「目標速度の軸」優先タイブレーク(world.rpmFracOf を main.ts が注入)。旧セーブ(layerなし)は saves.ts が読込時にメッシュから層を推定して移行
 
 2. **減速比は有理数で厳密判定**(core/ratio.ts, check.ts)。針の速さチェックは浮動小数でなく歯数の分数演算(`rpmFrac`)で行う。目標は秒針 1/1・分針 1/60・時針 1/720(1シミュ分あたりの回転数)。振り子駆動など周期が無理数の場合のみ数値比較(許容1.2%)にフォールバック
 
@@ -57,6 +60,7 @@ main へ push すると GitHub Actions(.github/workflows/deploy.yml)が自動ビ
 
 - 音は必ずユーザー操作後: タイトル画面「はじめる」タップで `AudioEngine.unlock()`
 - キャンバスとパレットの `touch-action` 設定(パレットは上部の横スクロールバー。pan-x = 横スクロール/下へのドラッグ配置の両立。左端に置くと Safari の戻るスワイプ等と衝突するため上部固定にした経緯がある)
-- タップのヒット判定順(ui/pointer.ts の hitOrder)は renderer.ts の描画順と一致させる(最前面優先)
+- タップのヒット判定は Raycaster+不可視ヒット円板(visuals.ts の hitDisk、半径は partHitRadius+10 の甘め判定)。最前面優先はカメラ距離で自然に決まる
+- WebGL コンテキストロスト時は autosave してからリロードで復帰(main.ts)
 - 画面左端32pxの `touchstart` を preventDefault(戻るエッジスワイプ対策、main.ts)
 - ミューテーション系のUI操作は実行前に `world.pushUndo()` を呼ぶ(↩ボタンの整合性)

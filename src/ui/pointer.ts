@@ -1,45 +1,24 @@
 import type { App } from '../app'
-import { dist } from '../core/gear'
-import type { Part, PartId, Vec2 } from '../core/types'
-import { partHitRadius } from '../render/renderer'
+import type { PartId, Vec2 } from '../core/types'
+import { dragPlaneZ, pick3 } from '../render3/renderer3'
 
-// キャンバス上のタッチ/マウス操作:
-//  1本指 … パーツのドラッグ or 盤面のパン、タップで選択
-//  2本指 … ピンチズーム+パン
-
-// 描画の重なり順(手前が小さい値)。renderer.ts の描画順と一致させること。
-// 下から: 文字盤(うしろ) → ラック → 歯車類 → カム → 文字盤(まえ) → 針 → 人形
-function hitOrder(p: Part): number {
-  switch (p.kind) {
-    case 'doll': return 0
-    case 'hand': return 1
-    case 'dial': return p.front ? 2 : 6
-    case 'cam': return 3
-    case 'rack': return 5
-    default: return 4   // motor / gear / escapement / karakuriMotor
-  }
-}
-
-function hitTest(app: App, w: Vec2): Part | null {
-  // 最前面のものから順に判定(同じ層なら後から置いたものが手前)
-  const sorted = app.world.parts
-    .map((p, i) => ({ p, i }))
-    .sort((a, b) => hitOrder(a.p) - hitOrder(b.p) || b.i - a.i)
-  for (const { p } of sorted) {
-    const pad = 10 / app.camera.scale
-    if (dist(p.pos, w) < partHitRadius(p) + pad) return p
-  }
-  return null
-}
+// キャンバス上のタッチ/マウス操作(3D):
+//  1本指 パーツ上 … そのパーツの層平面上でドラッグ
+//  1本指 空白     … オービット(視点をぐるっと回す)
+//  タップ          … 選択 / 空白で選択解除
+//  2本指           … ピンチズーム+パン(従来と同じ指づかい)
 
 export function initPointer(app: App): void {
   const canvas = app.canvas
   const pointers = new Map<number, Vec2>()
   let dragId: PartId | null = null
   let dragOffset: Vec2 = { x: 0, y: 0 }
+  let dragZ = 0
   let moved = false
   let undoPushed = false
-  let panLast: Vec2 | null = null
+  let orbiting = false
+  let last: Vec2 | null = null
+  let downAt: Vec2 | null = null
   let pinchDist = 0
   let pinchMid: Vec2 = { x: 0, y: 0 }
 
@@ -55,20 +34,24 @@ export function initPointer(app: App): void {
     pointers.set(e.pointerId, s)
 
     if (pointers.size === 1) {
-      const w = app.camera.screenToWorld(s.x, s.y)
-      const hit = hitTest(app, w)
       moved = false
       undoPushed = false
+      downAt = s
+      last = s
+      const hit = pick3(app, s.x, s.y)
       if (hit) {
         dragId = hit.id
+        orbiting = false
+        dragZ = dragPlaneZ(app, hit)
+        const w = app.camera.screenToWorld(s.x, s.y, dragZ)
         dragOffset = { x: hit.pos.x - w.x, y: hit.pos.y - w.y }
       } else {
         dragId = null
-        panLast = s
+        orbiting = true
       }
     } else if (pointers.size === 2) {
       dragId = null
-      panLast = null
+      orbiting = false
       app.previewPartId = null
       const [a, b] = [...pointers.values()]
       pinchDist = Math.hypot(a.x - b.x, a.y - b.y)
@@ -85,38 +68,49 @@ export function initPointer(app: App): void {
       const [a, b] = [...pointers.values()]
       const d = Math.hypot(a.x - b.x, a.y - b.y)
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
-      if (pinchDist > 0) app.camera.zoomAt(mid.x, mid.y, d / pinchDist)
+      if (pinchDist > 0) app.camera.dolly(d / pinchDist)
       app.camera.panBy(mid.x - pinchMid.x, mid.y - pinchMid.y)
       pinchDist = d
       pinchMid = mid
       return
     }
 
-    if (dragId) {
+    if (!downAt || !last) return
+    if (!moved && Math.hypot(s.x - downAt.x, s.y - downAt.y) > 6) {
+      moved = true
+      if (dragId) {
+        const part = app.world.byId(dragId)
+        if (part) {
+          if (!undoPushed) { app.world.pushUndo(); undoPushed = true }
+          // 取り付け済みパーツはドラッグで外れる
+          if (part.kind === 'hand' || part.kind === 'cam' || part.kind === 'doll' || part.kind === 'dial') {
+            part.mountId = null
+          }
+          app.previewPartId = part.id
+        }
+      }
+    }
+
+    if (moved && dragId) {
       const part = app.world.byId(dragId)
       if (!part) { dragId = null; return }
-      const w = app.camera.screenToWorld(s.x, s.y)
-      const next = { x: w.x + dragOffset.x, y: w.y + dragOffset.y }
-      if (!moved && dist(part.pos, next) > 5 / app.camera.scale) {
-        moved = true
-        if (!undoPushed) { app.world.pushUndo(); undoPushed = true }
-        // 取り付け済みパーツはドラッグで外れる
-        if (part.kind === 'hand' || part.kind === 'cam' || part.kind === 'doll' || part.kind === 'dial') part.mountId = null
-        app.previewPartId = part.id
-      }
-      if (moved) part.pos = next
-    } else if (panLast) {
-      app.camera.panBy(s.x - panLast.x, s.y - panLast.y)
-      panLast = s
+      const w = app.camera.screenToWorld(s.x, s.y, dragZ)
+      part.pos = { x: w.x + dragOffset.x, y: w.y + dragOffset.y }
+    } else if (moved && orbiting) {
+      app.camera.orbit(s.x - last.x, s.y - last.y)
     }
+    last = s
   })
 
   const finish = (e: PointerEvent) => {
     pointers.delete(e.pointerId)
     if (pointers.size === 1) {
-      // ピンチ終了 → 残った指でパン継続
+      // ピンチ終了 → 残った指はオービット継続
       const [rest] = [...pointers.values()]
-      panLast = rest
+      last = rest
+      downAt = rest
+      orbiting = true
+      dragId = null
       pinchDist = 0
       return
     }
@@ -129,11 +123,13 @@ export function initPointer(app: App): void {
       } else if (part && !moved) {
         app.select(part.id)
       }
-    } else if (!moved && panLast && e.type === 'pointerup') {
+    } else if (!moved && orbiting && e.type === 'pointerup') {
       app.select(null)
     }
     dragId = null
-    panLast = null
+    orbiting = false
+    last = null
+    downAt = null
     app.previewPartId = null
   }
 
@@ -143,7 +139,6 @@ export function initPointer(app: App): void {
   // デスクトップ用: ホイールでズーム
   canvas.addEventListener('wheel', e => {
     e.preventDefault()
-    const rect = canvas.getBoundingClientRect()
-    app.camera.zoomAt(e.clientX - rect.left, e.clientY - rect.top, e.deltaY < 0 ? 1.12 : 0.89)
+    app.camera.dolly(e.deltaY < 0 ? 1.12 : 0.89)
   }, { passive: false })
 }

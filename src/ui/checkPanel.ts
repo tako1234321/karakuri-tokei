@@ -3,7 +3,7 @@ import { handStatus } from '../core/check'
 import { fstr } from '../core/ratio'
 import type { HandKind } from '../core/types'
 import { HAND_LABEL } from '../data/hands'
-import { spawnConfetti } from '../render/renderer'
+import { spawnConfetti } from '../render3/effectsOverlay'
 
 const TARGET_TEXT: Record<HandKind, string> = {
   sec: 'めあて: 1ぷんで 1しゅう',
